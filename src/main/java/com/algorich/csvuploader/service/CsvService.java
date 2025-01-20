@@ -9,6 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class CsvService {
 
     private final CsvDataRepository repository;
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     public void uploadCsv(MultipartFile file) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
@@ -37,8 +40,13 @@ public class CsvService {
                 data.setCode(values[2].replace("\"", ""));
                 data.setDisplayValue(values[3].replace("\"", ""));
                 data.setLongDescription(values[4].replace("\"", ""));
-                data.setFromDate(values[5].replace("\"", ""));
-                data.setToDate(values[6].replace("\"", ""));
+                
+                String fromDateStr = values[5].replace("\"", "");
+                data.setFromDate(fromDateStr.isEmpty() ? null : LocalDate.parse(fromDateStr, dateFormatter));
+                
+                String toDateStr = values[6].replace("\"", "");
+                data.setToDate(toDateStr.isEmpty() ? null : LocalDate.parse(toDateStr, dateFormatter));
+                
                 data.setSortingPriority(values[7].replace("\"", ""));
                 dataList.add(data);
             }
@@ -75,8 +83,8 @@ public class CsvService {
                 data.getCode(),
                 data.getDisplayValue(),
                 data.getLongDescription(),
-                data.getFromDate(),
-                data.getToDate(),
+                data.getFromDate() != null ? data.getFromDate().format(dateFormatter) : "",
+                data.getToDate() != null ? data.getToDate().format(dateFormatter) : "",
                 data.getSortingPriority()));
         });
         
