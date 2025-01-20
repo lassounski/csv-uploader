@@ -59,3 +59,9 @@ The application allows you to:
 - Persist data in H2 database
 
 The code includes proper error handling, follows Spring Boot best practice
+
+Further steps:
+- Add proper loggin with Logback
+- Have a Global Exception handler to handle various exceptional scenarios
+- Add a Validator for the incoming CSV file
+- Use the target database running in TestContainers for integration testing
