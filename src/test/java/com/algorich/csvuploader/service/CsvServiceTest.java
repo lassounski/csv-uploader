@@ -3,6 +3,7 @@ package com.algorich.csvuploader.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -18,14 +19,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.algorich.csvuploader.exception.CsvValidationException;
 import com.algorich.csvuploader.model.CsvData;
 import com.algorich.csvuploader.repository.CsvDataRepository;
+import com.algorich.csvuploader.validation.CsvValidator;
+import com.algorich.csvuploader.validation.ValidationResult;
 
 @ExtendWith(MockitoExtension.class)
 class CsvServiceTest {
 
     @Mock
     private CsvDataRepository repository;
+
+    @Mock
+    private CsvValidator csvValidator;
 
     @InjectMocks
     private CsvService service;
@@ -56,6 +63,7 @@ class CsvServiceTest {
                 content.getBytes()
         );
 
+        when(csvValidator.validate(file)).thenReturn(new ValidationResult(true, List.of()));
         ArgumentCaptor<List<CsvData>> dataListCaptor = ArgumentCaptor.forClass(List.class);
 
         // When
@@ -78,6 +86,26 @@ class CsvServiceTest {
                 assertThat(d.getToDate()).isNull();
                 assertThat(d.getSortingPriority()).isEqualTo("1");
             });
+    }
+
+    @Test
+    void uploadCsv_ShouldThrowExceptionWhenValidationFails() {
+        // Given
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.csv",
+                "text/csv",
+                "invalid content".getBytes()
+        );
+        List<String> errors = List.of("Invalid CSV format");
+        when(csvValidator.validate(file)).thenReturn(new ValidationResult(false, errors));
+
+        // When/Then
+        CsvValidationException exception = assertThrows(
+            CsvValidationException.class,
+            () -> service.uploadCsv(file)
+        );
+        assertThat(exception.getErrors()).isEqualTo(errors);
     }
 
     @Test

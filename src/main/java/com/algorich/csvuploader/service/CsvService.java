@@ -2,6 +2,9 @@ package com.algorich.csvuploader.service;
 
 import com.algorich.csvuploader.model.CsvData;
 import com.algorich.csvuploader.repository.CsvDataRepository;
+import com.algorich.csvuploader.exception.CsvValidationException;
+import com.algorich.csvuploader.validation.CsvValidator;
+import com.algorich.csvuploader.validation.ValidationResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,9 +23,15 @@ import java.util.Optional;
 public class CsvService {
 
     private final CsvDataRepository repository;
+    private final CsvValidator csvValidator;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     public void uploadCsv(MultipartFile file) {
+        ValidationResult validationResult = csvValidator.validate(file);
+        if (!validationResult.isValid()) {
+            throw new CsvValidationException(validationResult.getErrors());
+        }
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             String line;
             boolean firstLine = true;
